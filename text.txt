@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎬 Anime Recap Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            text-align: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #ff6b6b;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+        input, button, select {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 12px;
+            border: none;
+            font-size: 16px;
+        }
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.02);
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        video {
+            width: 100%;
+            border-radius: 12px;
+            margin: 20px 0;
+            background: #000;
+        }
+        .loading {
+            display: none;
+            background: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .duration-selector {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .duration-selector button {
+            flex: 1;
+            background: #2d2d4d;
+        }
+        .selected {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53) !important;
+            border: 2px solid white;
+        }
+        .feature-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .feature-btn {
+            background: #2d2d4d;
+            font-size: 14px;
+            padding: 12px;
+        }
+        .feature-btn.active {
+            background: #4ecdc4;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .result-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Anime Recap Maker</h1>
+        <p class="subtitle">Create viral 60-120s anime highlight clips</p>
+        
+        <input type="file" id="videoInput" accept="video/*" onchange="checkFile()">
+        
+        <div>
+            <p>Clip Duration:</p>
+            <div class="duration-selector">
+                <button class="selected" onclick="setDuration(60)">60s</button>
+                <button onclick="setDuration(90)">90s</button>
+                <button onclick="setDuration(120)">120s</button>
+            </div>
+        </div>
+        
+        <div>
+            <p>Features:</p>
+            <div class="feature-selector">
+                <button class="feature-btn active" onclick="toggleFeature('captions')">🎤 Captions</button>
+                <button class="feature-btn active" onclick="toggleFeature('zoom')">🔍 Zoom Effect</button>
+                <button class="feature-btn" onclick="toggleFeature('speed')">⚡ Speed Up</button>
+                <button class="feature-btn" onclick="toggleFeature('music')">🎵 Trending Audio</button>
+            </div>
+        </div>
+        
+        <button id="processBtn" onclick="processVideo()" disabled>Generate Recap</button>
+        
+        <div class="loading" id="loading">
+            <p>⏳ Processing your anime clip...</p>
+            <div class="progress-bar">
+                <div class="progress" id="progressBar"></div>
+            </div>
+            <p id="statusText">Analyzing scenes...</p>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let selectedDuration = 60;
+        let selectedFeatures = {
+            captions: true,
+            zoom: true,
+            speed: false,
+            music: false
+        };
+        let file = null;
+        
+        function checkFile() {
+            file = document.getElementById('videoInput').files[0];
+            document.getElementById('processBtn').disabled = !file;
+        }
+        
+        function setDuration(seconds) {
+            selectedDuration = seconds;
+            document.querySelectorAll('.duration-selector button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+        
+        function toggleFeature(feature) {
+            selectedFeatures[feature] = !selectedFeatures[feature];
+            event.target.classList.toggle('active');
+        }
+        
+        async function processVideo() {
+            if (!file) return alert("Please select a video file");
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('processBtn').disabled = true;
+            
+            // Simulate progress
+            simulateProgress();
+            
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('video', file);
+            formData.append('duration', selectedDuration);
+            formData.append('features', JSON.stringify(selectedFeatures));
+            
+            try {
+                // REPLACE THIS URL WITH YOUR ACTUAL BACKEND URL
+                const response = await fetch('https://your-backend-url.com/process', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    showResult(url);
+                } else {
+                    throw new Error('Processing failed');
+                }
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('processBtn').disabled = false;
+                alert("Processing failed. Try a shorter video (under 5 minutes).");
+            }
+        }
+        
+        function simulateProgress() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                }
+                document.getElementById('progressBar').style.width = progress + '%';
+                
+                // Update status text
+                const statuses = [
+                    "Analyzing scenes...",
+                    "Detecting emotional moments...",
+                    "Adding captions...",
+                    "Applying effects...",
+                    "Finalizing clip..."
+                ];
+                const statusIndex = Math.min(Math.floor(progress / 20), statuses.length - 1);
+                document.getElementById('statusText').textContent = statuses[statusIndex];
+            }, 300);
+        }
+        
+        function showResult(videoUrl) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('processBtn').disabled = false;
+            
+            document.getElementById('result').innerHTML = `
+                <div class="result-container">
+                    <h2>✅ Your ${selectedDuration} Second Recap</h2>
+                    <video controls>
+                        <source src="${videoUrl}" type="video/mp4">
+                    </video>
+                    <button onclick="downloadClip('${videoUrl}')">📥 Download Clip</button>
+                    <button onclick="shareClip('${videoUrl}')">📱 Share to TikTok</button>
+                </div>
+            `;
+        }
+        
+        function downloadClip(url) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `anime_recap_${selectedDuration}s.mp4`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        
+        function shareClip(url) {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My Anime Recap',
+                    text: 'Check out this epic anime clip! #AnimeRecap #Shorts',
+                    url: url
+                });
+            } else {
+                alert('Share feature not supported. Download the clip and share manually.');
+            }
+        }
+    </script>
+</body>
+</html>
